@@ -40,3 +40,6 @@ __pycache__/
 **node_modules
 **package-lock.json
 
+## github pems
+api/entity/rtc-vertigo-dev.private-key.pem
+api/entity/rtc-vertigo-prod.private-key.pem

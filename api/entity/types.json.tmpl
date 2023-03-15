@@ -1,0 +1,155 @@
+{{ define "all" }}
+[
+  {
+    "id": "27b8e62c-fcec-450c-9774-579a9549917f",
+    "owner": "system",
+    "overlay": false,
+    "name": "general",
+    "target": "ad",
+    "attributes": [],
+    "filters": []
+  },
+  {
+    "id": "5665f5f8-5533-4aa1-96f4-b78e02714de0",
+    "owner": "system",
+    "overlay": false,
+    "name": "realestate",
+    "target": "ad",
+    "attributes": [
+      {
+        "name": "price",
+        "type": 0,
+        "label": "Asking Price",
+        "required": true,
+        "widget": "text",
+        "attributes": []
+      },
+      {
+        "name": "beds",
+        "type": 0,
+        "label": "Beds",
+        "required": true,
+        "widget": "text",
+        "attributes": []
+      },
+      {
+        "name": "baths",
+        "type": 0,
+        "label": "Baths",
+        "required": true,
+        "widget": "text",
+        "attributes": []
+      },
+      {
+        "name": "sqft",
+        "type": 0,
+        "label": "Sqft",
+        "required": true,
+        "widget": "text",
+        "attributes": []
+      }
+    ],
+    "filters": [
+      {
+        "name": "beds",
+        "type": 0,
+        "label": "Beds",
+        "required": false,
+        "widget": "text",
+        "attributes": []
+      },
+      {
+        "name": "baths",
+        "type": 0,
+        "label": "Baths",
+        "required": false,
+        "widget": "text",
+        "attributes": []
+      } 
+    ]
+  },
+  {
+    "id": "d9bf054c-2a43-4976-a35e-25bd4c58417e",
+    "owner": "system",
+    "overlay": false,
+    "name": "rentals",
+    "target": "ad",
+    "attributes": [],
+    "filters": []
+  },
+  {
+    "id": "ef5c1cdb-95b3-45be-ba01-b6745d9744f9",
+    "owner": "system",
+    "overlay": false,
+    "name": "autos",
+    "target": "ad",
+    "attributes": [
+      {
+        "name": "ymm",
+        "type": 2,
+        "label": "YMM",
+        "required": false,
+        "widget": "ymm_selector",
+        "attributes": [
+          {
+            "name": "year",
+            "type": 0,
+            "label": "Year",
+            "required": false,
+            "widget": "text",
+            "attributes": []
+          },
+          {
+            "name": "make",
+            "type": 1,
+            "label": "Make",
+            "required": false,
+            "widget": "text",
+            "attributes": []
+          },
+          {
+            "name": "model",
+            "type": 1,
+            "label": "Model",
+            "required": false,
+            "widget": "text",
+            "attributes": []
+          }
+        ]
+      }
+    ],
+    "filters": [
+      {
+         "name": "ymm",
+         "label": "YMM",
+         "type": 2,
+         "required": false,
+         "attributes": [
+            {
+               "name": "year",
+               "label": "Year",
+               "type": 0,
+               "required": false,
+               "attributes": []
+            },
+            {
+               "name": "make",
+               "label": "Make",
+               "type": 1,
+               "required": false,
+               "attributes": []
+            },
+            {
+               "name":"model",
+               "label":"model",
+               "type": 1,
+               "required": false,
+               "attributes": []
+            }
+         ],
+         "widget": "ymm_selector"
+      }
+    ]
+  }
+]
+{{end}}

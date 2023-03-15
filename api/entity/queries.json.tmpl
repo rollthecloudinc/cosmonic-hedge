@@ -1,0 +1,412 @@
+{{ define "_ads" }}
+{
+		"bool": {
+			"filter": [
+				{
+					"bool": {
+						"must": [
+							{
+								"term": {
+									"typeId.keyword": {
+										"value": "{{ index .Req.QueryStringParameters "typeId" }}"
+									}
+								}
+							}
+                            {{ with .Req.MultiValueQueryStringParameters.location }}{{ if eq (len .) 2 }},
+							{
+								"geo_distance": {
+									"validation_method": "ignore_malformed",
+									"distance": "10m",
+									"distance_type": "arc",
+									"location": {
+										"lat": {{ index . 1 }},
+										"lon": {{ index . 0 }}
+									}
+								}
+							}
+                            {{ end }}{{ end }}
+                            {{ range $index, $attribute := .Attributes }}
+                                {{ if (index $.Req.MultiValueQueryStringParameters $attribute.Name) }}
+                                ,{
+                                    "nested": {
+                                        "path": "attributes",
+                                        "query": {
+                                            "bool": {
+                                                "must": [
+                                                    {
+                                                        "term": {
+                                                            "attributes.name": {
+                                                                "value": "{{ $attribute.Name }}"
+                                                            }
+                                                        }
+                                                    },
+                                                    {
+                                                        "terms": {
+                                                            {{ if eq (print $attribute.Type) "0" }}
+                                                            "attributes.intValue": [
+                                                                {{range $index2, $value := (index $.Req.MultiValueQueryStringParameters $attribute.Name) }}{{ if ne $index2 0 }},{{ end }}
+                                                                    {{ $value }}
+                                                                {{ end }}
+                                                            ]
+                                                            {{ else }}
+                                                            "attributes.value": [
+                                                                {{range $index2, $value := (index $.Req.MultiValueQueryStringParameters $attribute.Name) }}{{ if ne $index2 0 }},{{ end }}
+                                                                    "{{ $value }}"
+                                                                {{ end }}
+                                                            ]                
+                                                            {{ end }}
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    }
+                                }
+                                {{ end }}
+                            {{ end }}
+						]
+					}
+				}
+			],
+			"must": [
+                {{ with .Req.QueryStringParameters.searchString }}
+				{
+					"match": {
+						"title": {
+							"query": "{{ . }}"
+						}
+					}
+				}
+                {{ end }}
+                {{ with .Req.MultiValueQueryStringParameters.features }}{{ if $.Req.QueryStringParameters.searchString }},{{ end }}
+                {{ range $index, $feature := . }}{{ if ne $index 0 }},{{ end }}
+				{
+					"nested": {
+						"path": "featureSets",
+						"query": {
+                            "nested": {
+                                "path": "featureSets.terms",
+                                "query": {
+                                    "bool": {
+								        "must": [
+									        { 
+                                                "match": { 
+                                                    "featureSets.terms.humanName": "{{ $feature }}" 
+                                                } 
+                                            }
+                                        ]
+								    }
+                                }
+                            }
+						}
+					}
+				}
+                {{ end }}
+                {{ end }}
+			]
+		}
+}
+{{ end }}
+
+{{ define "ads" }}
+{
+    "query": {{ template "_ads" . }}
+}
+{{end}}
+
+{{ define "featurelistitems" }}
+{
+    "aggs": {
+        "features": {
+            {{ if .Req.QueryStringParameters.featureSearchString }} "aggs": { {{ end }}
+                {{ if .Req.QueryStringParameters.featureSearchString }} "features_filtered": { {{ end }}
+                    "aggs": {
+                        "feature_names": {
+                            "terms": {
+                                "field": "featureSets.terms.humanName.keyword"
+                            }
+                        }
+                    },
+                    {{ if .Req.QueryStringParameters.featureSearchString }}
+                    "filter": {
+                        "bool": {
+                            "should": [
+                                {
+                                    "match": {
+                                        "featureSets.terms.humanName": {
+                                            "query": "{{ .Req.QueryStringParameters.featureSearchString }}"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                    {{ end }}
+                {{ if .Req.QueryStringParameters.featureSearchString }} } {{ end }}
+            {{ if .Req.QueryStringParameters.featureSearchString }} }, {{ end }}
+            "nested": {
+                "path": "featureSets.terms"
+            }
+        }
+    },
+    "query": {{ template "_ads" . }},
+    "size": 0
+}
+{{ end }}
+
+{{ define "profiles" }}
+{
+    "query": {
+        "bool": {
+            "must": [
+                {
+                    "bool": {
+                        "filter": [
+                            {
+                                "term": {
+                                    "parentId.keyword": {
+                                        "value": "{{ index .Req.QueryStringParameters "parentId" }}"
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                },
+                {
+                    "bool": {
+                        "should": [
+                            {
+                                "bool": {
+                                    "filter": [
+                                        {
+                                            "term": {
+                                                "entityPermissions.readUserIds.keyword": {
+                                                    "value": "{{ .Req.RequestContext.Authorizer.claims.sub }}"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            },
+                            {
+                                "bool": {
+                                    "filter": [
+                                        {
+                                            "term": {
+                                                "entityPermissions.writeUserIds.keyword": {
+                                                    "value": "{{ .Req.RequestContext.Authorizer.claims.sub }}"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            },
+                            {
+                                "bool": {
+                                    "filter": [
+                                        {
+                                            "term": {
+                                                "entityPermissions.deleteUserIds.keyword": {
+                                                    "value": "{{ .Req.RequestContext.Authorizer.claims.sub }}"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+    },
+    "size": 1000
+}
+{{ end }}
+
+{{ define "_profiles" }}
+{
+    "query": {
+        "bool": {
+            "should": [
+                {
+                    "bool": {
+                        "filter": [
+                            {
+                                "term": {
+                                    "entityPermissions.readUserIds.keyword": {
+                                        "value": "{{ .Req.RequestContext.Authorizer.claims.sub }}"
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                },
+                {
+                    "bool": {
+                        "filter": [
+                            {
+                                "term": {
+                                    "entityPermissions.writeUserIds.keyword": {
+                                        "value": "{{ .Req.RequestContext.Authorizer.claims.sub }}"
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                },
+                {
+                    "bool": {
+                        "filter": [
+                            {
+                                "term": {
+                                    "entityPermissions.deleteUserIds.keyword": {
+                                        "value": "{{ .Req.RequestContext.Authorizer.claims.sub }}"
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+    },
+    "size": 1000
+}
+{{ end }}
+
+{{ define "profilenavitems" }}
+{
+    "query": {
+        "bool": {
+            "should": [
+                {{ $profiles := (query "profile/_profiles" .) }}
+                {{ $res := (lambda "profile/ReadableProfiles" .Req.RequestContext.Authorizer.claims.sub $profiles) }}
+                {
+                    "bool": {
+                        "filter": [
+                            {
+                                "terms": {
+                                    "id.keyword": [
+                                        {{ range $index, $id := $res.Data }}
+                                            {{ if ne $index 0 }},{{ end }}"{{ index $id "value" }}"
+                                        {{ end }}
+                                    ]
+                                }
+                            }
+                        ]
+                    }
+                },
+                {
+                    "bool": {
+                        "filter": [
+                            {
+                                "terms": {
+                                    "parentId.keyword": [
+                                        {{ range $index, $id := $res.Data }}
+                                            {{ if ne $index 0 }},{{ end }}"{{ index $id "value" }}"
+                                        {{ end }}
+                                    ]
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+    },
+    "size": 1000
+}
+{{ end }}
+
+{{ define "vocabularies" }}
+{
+    "query": {
+        "bool": {
+            "filter": [
+                {
+                    "bool": {
+                        "must": {
+                            "term": {
+                                "userId.keyword": {
+                                    "value": "{{ .Req.RequestContext.Authorizer.claims.sub }}"
+                                }
+                            }
+                        }   
+                    }
+                }
+            ]
+        }
+    },
+    "size": 100
+}
+{{ end }}
+
+{{ define "panelpages" }}
+{
+  "query": {
+    "bool": {
+      "filter": [
+        {
+            "bool": {
+                "must": [
+                    {
+                        "bool": {
+                            "should": [
+                                {
+                                    "term": {
+                                        "entityPermissions.readUserIds.keyword": {
+                                            "value": "*"
+                                        }
+                                    }
+                                },
+                                {
+                                    "term": {
+                                        "entityPermissions.readUserIds.keyword": {
+                                            "value": "{{ userId .Req }}"
+                                        }
+                                    }
+                                },
+                                {
+                                    "term": {
+                                        "entityPermissions.writeUserIds.keyword": {
+                                            "value": "{{ userId .Req }}"
+                                        }
+                                    }
+                                },
+                                {
+                                    "term": {
+                                        "entityPermissions.deleteUserIds.keyword": {
+                                            "value": "{{ userId .Req }}"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                    {{ if $.Req.MultiValueQueryStringParameters.path }},
+                    {
+                        "bool": {
+                            "should": [
+                                {{ range $index, $value := $.Req.MultiValueQueryStringParameters.path }}{{ if ne $index 0 }},{{ end }}
+                                    {
+                                        "term": {
+                                            "path.keyword": {
+                                                "value": "{{ $value }}"
+                                            }
+                                        }
+                                    }
+                                {{ end }}
+                            ]
+                        }
+                    }
+                    {{ end }}
+                ]
+            }
+        }
+      ]
+    }
+  },
+  "size": 1000
+}
+{{end}}

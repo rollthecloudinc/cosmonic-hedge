@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/wasmcloud/actor-tinygo"
 	"github.com/wasmcloud/interfaces/httpserver/tinygo"
+	shapeshift "github.com/rollthecloudinc/cosmonic-hedge/shapeshift"
 )
 
 func main() {
@@ -13,7 +14,7 @@ func main() {
 type CosmonicHedge struct{}
 
 func (e *CosmonicHedge) HandleRequest(ctx *actor.Context, req httpserver.HttpRequest) (*httpserver.HttpResponse, error) {
-	
+	actionContext := &shapeshift.ActionContext{}
 	r := httpserver.HttpResponse{
 		StatusCode: 200,
 		Header:     make(httpserver.HeaderMap, 0),
