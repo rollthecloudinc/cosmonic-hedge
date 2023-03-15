@@ -91,6 +91,9 @@ jobs:
         if: ${{ !startswith(github.ref, 'refs/tags/') }}
         run: |
           echo "actor-version=latest" >> $GITHUB_ENV
+      - name: Display structure of downloaded files
+        run: ls -R
+        working-directory: build
       - name: Push actor to GHCR
         env:
           WASH_REG_USER: ${{ github.repository_owner }}
