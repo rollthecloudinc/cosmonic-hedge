@@ -13,6 +13,7 @@ func main() {
 type CosmonicHedge struct{}
 
 func (e *CosmonicHedge) HandleRequest(ctx *actor.Context, req httpserver.HttpRequest) (*httpserver.HttpResponse, error) {
+	
 	r := httpserver.HttpResponse{
 		StatusCode: 200,
 		Header:     make(httpserver.HeaderMap, 0),
