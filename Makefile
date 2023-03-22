@@ -21,7 +21,7 @@ ${MODULE}: ${UNSIGNED} Makefile
 
 ${UNSIGNED}: $(wildcard *.go) go.mod Makefile
 	@mkdir -p $(shell dirname $@)
-	tinygo build -o $@ -target wasm -scheduler none -no-debug -tags "linux cgo"  .
+	tinygo build -o $@ -target wasm -scheduler none -no-debug -tags linux  .
 
 clean:
 	rm -f ${MODULE} ${UNSIGNED}
