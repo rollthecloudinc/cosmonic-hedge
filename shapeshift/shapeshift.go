@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"os"
 	"strings"
 	"text/template"
 
@@ -370,7 +369,7 @@ func InitializeHandler(c *ActionContext) Handler {
 		// Default to using owner authoization fo all entities.
 		if singularName == "panelpage" {
 			suffix := ""
-			if os.Getenv("STAGE") == "prod" {
+			if /*os.Getenv("STAGE")*/ "" == "prod" {
 				suffix = "-prod"
 			}
 			ac.EntityManager.AddAuthorizer("default", entity.ResourceOrOwnerAuthorizationAdaptor{
@@ -440,7 +439,7 @@ func InitializeHandler(c *ActionContext) Handler {
 				Config: entity.GithubFileUploadConfig{
 					Client:   ac.GithubV4Client,
 					Repo:     "rollthecloudinc/" + req.PathParameters["site"] + "-objects", // @todo: Hard coded to test integration for now.
-					Branch:   os.Getenv("GITHUB_BRANCH"),                                   // This will cone env vars from inside json file passed via serverless.
+					Branch:   "", //os.Getenv("GITHUB_BRANCH"),                                   // This will cone env vars from inside json file passed via serverless.
 					Path:     "panelpage",
 					UserName: GetUsername(req), // path to place stuff. This will probably be a separate repo or directory udnerneath assets.
 				},
@@ -449,7 +448,7 @@ func InitializeHandler(c *ActionContext) Handler {
 				Config: entity.GithubFileUploadConfig{
 					Client:   ac.GithubV4Client,
 					Repo:     "rollthecloudinc/" + req.PathParameters["site"] + "-objects", // @todo: Hard coded to test integration for now.
-					Branch:   os.Getenv("GITHUB_BRANCH"),                                   // This will cone env vars from inside json file passed via serverless.
+					Branch:   "", //os.Getenv("GITHUB_BRANCH"),                                   // This will cone env vars from inside json file passed via serverless.
 					Path:     "panelpage",
 					UserName: GetUsername(req), // path to place stuff. This will probably be a separate repo or directory udnerneath assets.
 				},
@@ -467,7 +466,7 @@ func InitializeHandler(c *ActionContext) Handler {
 				Config: entity.GithubRestFileUploadConfig{
 					Client:   ac.GithubRestClient,
 					Repo:     req.PathParameters["owner"] + "/" + req.PathParameters["repo"],
-					Branch:   os.Getenv("GITHUB_BRANCH"),
+					Branch:   "", //os.Getenv("GITHUB_BRANCH"),
 					Path:     loaderPath,
 					UserName: GetUsername(req),
 				},
@@ -476,7 +475,7 @@ func InitializeHandler(c *ActionContext) Handler {
 				Config: entity.GithubRestFileUploadConfig{
 					Client:   ac.GithubRestClient,
 					Repo:     req.PathParameters["owner"] + "/" + req.PathParameters["repo"],
-					Branch:   os.Getenv("GITHUB_BRANCH"),
+					Branch:   "", //os.Getenv("GITHUB_BRANCH"),
 					Path:     strings.Join(proxyPieces[0:len(proxyPieces)-1], "/"),
 					UserName: GetUsername(req),
 				},
@@ -602,7 +601,7 @@ func RequestActionContext(ac *ActionContext, req *events.APIGatewayProxyRequest)
 	additionalResources := make([]gov.Resource, 0)
 
 	if len(pathPieces) < 4 || pathPieces[3] != "shapeshifter" {
-		githubToken = os.Getenv("GITHUB_TOKEN")
+		githubToken = "" //os.Getenv("GITHUB_TOKEN")
 		srcToken = oauth2.StaticTokenSource(
 			&oauth2.Token{AccessToken: githubToken},
 		)
@@ -610,7 +609,7 @@ func RequestActionContext(ac *ActionContext, req *events.APIGatewayProxyRequest)
 		getTokenInput := &repo.GetInstallationTokenInput{
 			GithubAppPem: ac.GithubAppPem,
 			Owner:        req.PathParameters["owner"],
-			GithubAppId:  os.Getenv("GITHUB_APP_ID"),
+			GithubAppId:  "", //os.Getenv("GITHUB_APP_ID"),
 		}
 		installationToken, err := repo.GetInstallationToken(getTokenInput)
 		if err != nil {
@@ -621,7 +620,7 @@ func RequestActionContext(ac *ActionContext, req *events.APIGatewayProxyRequest)
 		)
 
 		username := GetUsername(req)
-		if username == os.Getenv("DEFAULT_SIGNING_USERNAME") || username == req.PathParameters["owner"] {
+		if username == ""/*os.Getenv("DEFAULT_SIGNING_USERNAME")*/ || username == req.PathParameters["owner"] {
 			log.Print("Granting explicit permission for " + username + " to " + req.PathParameters["owner"] + "/" + req.PathParameters["repo"])
 			resource := gov.Resource{
 				User:      GetUserId(req),
@@ -648,13 +647,13 @@ func RequestActionContext(ac *ActionContext, req *events.APIGatewayProxyRequest)
 		Service:        "es",
 		Region:         "us-east-1",
 		Session:        ac.Session,
-		IdentityPoolId: os.Getenv("IDENTITY_POOL_ID"),
-		Issuer:         os.Getenv("ISSUER"),
+		IdentityPoolId: "", //os.Getenv("IDENTITY_POOL_ID"),
+		Issuer:         "", //os.Getenv("ISSUER"),
 		Token:          token,
 	}
 
 	opensearchCfg := opensearch.Config{
-		Addresses: []string{os.Getenv("ELASTIC_URL")},
+		Addresses: []string{/*os.Getenv("ELASTIC_URL")*/},
 		Signer:    awsSigner,
 	}
 
@@ -735,7 +734,7 @@ func GrantAccessManager(params *gov.ResourceManagerParams, bindings *entity.Vari
 			SingularName: entityName,
 			PluralName:   inflector.Pluralize(entityName),
 			IdKey:        "id",
-			Stage:        os.Getenv("STAGE"),
+			Stage:        "", //os.Getenv("STAGE"),
 		},
 		Creator:  entity.DefaultCreatorAdaptor{},
 		Storages: map[string]entity.Storage{},
@@ -761,7 +760,7 @@ func ShapeshiftActionContext() *ActionContext {
 	log.Printf("Gin cold start")
 
 	elasticCfg := elasticsearch7.Config{
-		Addresses: []string{os.Getenv("ELASTIC_URL")},
+		Addresses: []string{/*os.Getenv("ELASTIC_URL")*/},
 	}
 
 	esClient, err := elasticsearch7.NewClient(elasticCfg)
@@ -773,12 +772,12 @@ func ShapeshiftActionContext() *ActionContext {
 	cogClient := cognitoidentityprovider.New(sess)
 
 	var cassSession *gocql.Session
-	if os.Getenv("CLOUD_NAME") == "azure" {
+	if "" /*os.Getenv("CLOUD_NAME")*/ == "azure" {
 		cluster := gocql.NewCluster("cassandra.us-east-1.amazonaws.com")
 		cluster.Keyspace = "ClassifiedsDev"
 		cluster.Port = 9142
 		cluster.Consistency = gocql.LocalOne // gocql.LocalQuorum
-		cluster.Authenticator = &gocql.PasswordAuthenticator{Username: os.Getenv("KEYSPACE_USERNAME"), Password: os.Getenv("KEYSPACE_PASSWORD")}
+		cluster.Authenticator = &gocql.PasswordAuthenticator{Username: /*os.Getenv("KEYSPACE_USERNAME")*/ "", Password: /*os.Getenv("KEYSPACE_PASSWORD")*/ ""}
 		cluster.SslOpts = &gocql.SslOptions{Config: &tls.Config{ServerName: "cassandra.us-east-1.amazonaws.com"}, CaPath: "api/chat/AmazonRootCA1.pem", EnableHostVerification: true}
 		cluster.PoolConfig = gocql.PoolConfig{HostSelectionPolicy: /*gocql.TokenAwareHostPolicy(*/ gocql.DCAwareRoundRobinPolicy("us-east-1") /*)*/}
 		cassSession, err = cluster.CreateSession()
@@ -788,7 +787,7 @@ func ShapeshiftActionContext() *ActionContext {
 		}
 	}
 
-	pem, err := os.ReadFile("api/entity/rtc-vertigo-" + os.Getenv("STAGE") + ".private-key.pem")
+	var pem []byte //, err := os.ReadFile("api/entity/rtc-vertigo-") //Getenv("STAGE") + ".private-key.pem")
 	if err != nil {
 		log.Print("Error reading github app pem file", err.Error())
 	}
@@ -799,11 +798,11 @@ func ShapeshiftActionContext() *ActionContext {
 		CassSession:  cassSession,
 		Lambda:       lClient,
 		Cognito:      cogClient,
-		BucketName:   os.Getenv("BUCKET_NAME"),
-		Stage:        os.Getenv("STAGE"),
-		UserPoolId:   os.Getenv("USER_POOL_ID"),
+		BucketName:   "",/*os.Getenv("BUCKET_NAME")*/
+		Stage:        "", /*os.Getenv("STAGE")*/
+		UserPoolId:   "", //os.Getenv("USER_POOL_ID"),
 		GithubAppPem: pem,
-		CloudName:    os.Getenv("CLOUD_NAME"),
+		CloudName:    "", //os.Getenv("CLOUD_NAME"),
 		Bindings:     &entity.VariableBindings{Values: make([]interface{}, 0)},
 	}
 
@@ -817,7 +816,7 @@ func ShapeshiftActionContext() *ActionContext {
 	}
 
 	t, err := template.New("").Funcs(funcMap).ParseFiles("api/entity/types.json.tmpl", "api/entity/queries.json.tmpl")
-	if os.Getenv("CLOUD_NAME") == "azure" {
+	if /*os.Getenv("CLOUD_NAME") == "azure"*/ true {
 		t, err = t.Parse(gov.Query())
 		if err != nil {
 			log.Print("Error parsing gov.Query() template.")
